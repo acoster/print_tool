@@ -285,7 +285,7 @@ class HPLPPClient:
         """Requests and parses the printer status fields supported by the firmware (Command Code: 0x08 -> 0x09)."""
         # Only request status fields supported by the PrintMaker firmware (matching the Java app)
         # 1: SYSTEM_FLAGS, 2: PRINT_STATUS, 3: BATTERY_LEVEL, 4: PRINT_PROGRESS, 5: CURRENT_JOB, 6: BATTERY_STATUS, 10: SUPPLY_TYPE, 11: SUPPLY_LEVEL
-        fields = [1, 2, 3, 4, 5, 6, 10, 11]
+        fields = [1, 2, 3, 4, 5, 6, 10, 11, 14]
         payload = bytes(fields)
         print_info("Reading printer status fields...")
         response = await self.send_and_wait(0x08, 0x09, payload, timeout=5.0)
