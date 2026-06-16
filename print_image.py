@@ -283,8 +283,7 @@ class HPLPPClient:
 
     async def read_status(self):
         """Requests and parses the printer status fields supported by the firmware (Command Code: 0x08 -> 0x09)."""
-        # Only request status fields supported by the PrintMaker firmware (matching the Java app)
-        # 1: SYSTEM_FLAGS, 2: PRINT_STATUS, 3: BATTERY_LEVEL, 4: PRINT_PROGRESS, 5: CURRENT_JOB, 6: BATTERY_STATUS, 10: SUPPLY_TYPE, 11: SUPPLY_LEVEL
+        # Request all status fields supported by the PrintMaker firmware. Requesting unsupported fields causes an INVALID_ARGUMENTS_ERROR.
         fields = [1, 2, 3, 4, 5, 6, 10, 11, 14]
         payload = bytes(fields)
         print_info("Reading printer status fields...")
@@ -443,42 +442,89 @@ def display_printer_info(status):
     print(f"{Colors.BOLD}🖨️  PRINTMAKER PRINTER STATUS{Colors.ENDC}")
     print("="*50)
     
-    # Battery Status
-    bat_level = status.get("battery_level", "Unknown")
-    bat_stat = status.get("battery_status", 0)
-    bat_stat_str = BATTERY_STATUS_LABELS.get(bat_stat, f"Unknown ({bat_stat})")
-    print(f"🔋 {Colors.BOLD}Battery Level:{Colors.ENDC} {bat_level}% ({bat_stat_str})")
+    # 1. System Flags (handled under Alerts section at the bottom)
     
-    # Ink / Supply Status
-    ink_level = status.get("supply_level", "Unknown")
-    supply_type = status.get("supply_type", 0)
-    supply_type_str = SUPPLY_TYPE_LABELS.get(supply_type, f"Unknown ({supply_type})")
-    print(f"💧 {Colors.BOLD}Ink Level:{Colors.ENDC} {ink_level}% ({supply_type_str})")
-    
-    # Cover / Cap Status (if returned by printer)
-    if "cap_status" in status:
-        cap_status = status["cap_status"]
-        cap_status_str = CAP_STATUS_LABELS.get(cap_status, f"Unknown ({cap_status})")
-        print(f"🔒 {Colors.BOLD}Printhead Cover:{Colors.ENDC} {cap_status_str}")
-    
-    # Print Status
-    print_stat = status.get("print_status", 0)
-    print_stat_str = PRINT_STATUS_LABELS.get(print_stat, f"Unknown ({print_stat})")
-    print(f"📈 {Colors.BOLD}Printer State:{Colors.ENDC} {print_stat_str}")
-    
-    # Queue Status (if returned by printer)
+    # 2. Print Status
+    if "print_status" in status:
+        print_stat = status["print_status"]
+        print_stat_str = PRINT_STATUS_LABELS.get(print_stat, f"Unknown ({print_stat})")
+        print(f"📈 {Colors.BOLD}Printer State:{Colors.ENDC} {print_stat_str}")
+    else:
+        print(f"📈 {Colors.BOLD}Printer State:{Colors.ENDC} Not reported by printer")
+        
+    # 3. Battery Level & 6. Battery Status
+    if "battery_level" in status or "battery_status" in status:
+        bat_level = status.get("battery_level", "Unknown")
+        bat_stat = status.get("battery_status", 0)
+        bat_stat_str = BATTERY_STATUS_LABELS.get(bat_stat, f"Unknown ({bat_stat})")
+        print(f"🔋 {Colors.BOLD}Battery Level:{Colors.ENDC} {bat_level}% ({bat_stat_str})")
+    else:
+        print(f"🔋 {Colors.BOLD}Battery Status:{Colors.ENDC} Not reported by printer")
+
+    # 4. Print Progress
+    if "print_progress" in status:
+        print(f"📊 {Colors.BOLD}Print Progress:{Colors.ENDC} {status['print_progress']}%")
+    else:
+        print(f"📊 {Colors.BOLD}Print Progress:{Colors.ENDC} Not reported by printer")
+
+    # 5. Current Job ID
+    if "current_job" in status:
+        print(f"🆔 {Colors.BOLD}Current Job ID:{Colors.ENDC} {status['current_job']}")
+    else:
+        print(f"🆔 {Colors.BOLD}Current Job ID:{Colors.ENDC} Not reported by printer")
+        
+    # 7. Queue Status
     if "queue_status" in status:
         q_status = status["queue_status"]
         q_status_str = QUEUE_STATUS_LABELS.get(q_status, f"Unknown ({q_status})")
         print(f"📋 {Colors.BOLD}Queue State:{Colors.ENDC} {q_status_str}")
-    
-    # Current Job
-    job_id = status.get("current_job", "None")
-    print(f"🆔 {Colors.BOLD}Current Job ID:{Colors.ENDC} {job_id}")
-    
-    # System Flags / Alerts
-    flags = status.get("system_flags", {})
-    if flags:
+    else:
+        print(f"📋 {Colors.BOLD}Queue State:{Colors.ENDC} Not reported by printer")
+
+    # 8. Current Job Copy Progress
+    if "current_job_copy_progress" in status:
+        print(f"📄 {Colors.BOLD}Job Copy Progress:{Colors.ENDC} {status['current_job_copy_progress']}%")
+    else:
+        print(f"📄 {Colors.BOLD}Job Copy Progress:{Colors.ENDC} Not reported by printer")
+
+    # 9. Number of Hosts
+    if "number_of_hosts" in status:
+        print(f"👥 {Colors.BOLD}Connected Hosts:{Colors.ENDC} {status['number_of_hosts']}")
+    else:
+        print(f"👥 {Colors.BOLD}Connected Hosts:{Colors.ENDC} Not reported by printer")
+
+    # 10. Supply Type & 11. Supply Level
+    if "supply_level" in status or "supply_type" in status:
+        ink_level = status.get("supply_level", "Unknown")
+        supply_type = status.get("supply_type", 0)
+        supply_type_str = SUPPLY_TYPE_LABELS.get(supply_type, f"Unknown ({supply_type})")
+        print(f"💧 {Colors.BOLD}Ink Level:{Colors.ENDC} {ink_level}% ({supply_type_str})")
+    else:
+        print(f"💧 {Colors.BOLD}Ink/Supply Status:{Colors.ENDC} Not reported by printer")
+
+    # 12. Supply Version
+    if "supply_version" in status:
+        print(f"🏷️  {Colors.BOLD}Supply Version:{Colors.ENDC} {status['supply_version']}")
+    else:
+        print(f"🏷️  {Colors.BOLD}Supply Version:{Colors.ENDC} Not reported by printer")
+
+    # 13. Supply Selectability
+    if "supply_selectability" in status:
+        print(f"📝 {Colors.BOLD}Supply Selectability:{Colors.ENDC} {status['supply_selectability']}")
+    else:
+        print(f"📝 {Colors.BOLD}Supply Selectability:{Colors.ENDC} Not reported by printer")
+
+    # 14. Cap Status (Printhead Cover)
+    if "cap_status" in status:
+        cap_status = status["cap_status"]
+        cap_status_str = CAP_STATUS_LABELS.get(cap_status, f"Unknown ({cap_status})")
+        print(f"🔒 {Colors.BOLD}Printhead Cover:{Colors.ENDC} {cap_status_str}")
+    else:
+        print(f"🔒 {Colors.BOLD}Printhead Cover:{Colors.ENDC} Not reported by printer")
+        
+    # System Flags / Alerts (1. SYSTEM_FLAGS)
+    if "system_flags" in status:
+        flags = status["system_flags"]
         print("\n⚠️  " + Colors.BOLD + "Active Alerts / System Flags:" + Colors.ENDC)
         alerts = []
         if flags.get("time_invalid"):
@@ -499,6 +545,8 @@ def display_printer_info(status):
                 print(f"  ├─ {Colors.WARNING}{alert}{Colors.ENDC}")
         else:
             print(f"  └─ {Colors.OKGREEN}All systems clear. No warnings.{Colors.ENDC}")
+    else:
+        print("\n⚠️  " + Colors.BOLD + "Active Alerts / System Flags:" + Colors.ENDC + " Not reported by printer")
             
     print("="*50 + "\n")
 
