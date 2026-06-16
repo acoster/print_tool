@@ -4,11 +4,6 @@ A custom Python CLI tool for macOS to scan, connect, handshake, and print images
 
 This tool implements the proprietary **HP LPP (Light Weight Print Protocol)** over BLE (Bluetooth Low Energy) framing, segmentation, and commands extracted from the decompiled printer application.
 
-## Requirements
-
-1. **Python 3.8+**
-2. **macOS Bluetooth Permissions**: The first time you run a script that uses Bluetooth on macOS, the operating system will show a system permission dialog. Ensure Bluetooth is enabled on your Mac and in your terminal emulator.
-3. **Printer Status**: Turn on your PrintMaker printer and ensure it is not connected to any other device (active pairing mode).
 
 ## Setup Instructions
 
@@ -16,7 +11,7 @@ We recommend running the tool in a Python virtual environment:
 
 ```bash
 # 1. Navigate to the tool directory
-cd /Users/alex/.gemini/antigravity-ide/scratch/print_tool
+cd /<wherever you've downloaded this>/print_tool
 
 # 2. Create a virtual environment
 python3 -m venv venv
